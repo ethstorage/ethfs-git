@@ -109,8 +109,6 @@ DeHub.createRepo("vitalik-blog", 0xUserAddress);
 3. Fetches current refs and packfileHashs.  
 4. Downloads pack files from EthStorage and reconstructs the repository locally.
 
----
-
 ## 6. Roadmap
 
 | Phase | Milestone |
