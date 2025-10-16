@@ -117,7 +117,6 @@ DeHub.createRepo("vitalik-blog", 0xUserAddress);
 | **Phase 2 – EthStorage Integration** | Push/fetch Git objects through EthStorage packfile hashes. |
 | **Phase 3 – Git Helper Integration** | Release `git-remote-eths` plugin to enable `git push` / `git clone` directly. |
 | **Phase 4 – Governance and Permissions** | Multi-sig / DAO-controlled writer sets, repo ownership transfer, and organization namespaces. |
----
 
 ## 7. Outlook
 
