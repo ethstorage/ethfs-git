@@ -5,9 +5,9 @@
 Modern open-source collaboration relies heavily on centralized services like GitHub and npm. While Git itself is decentralized, **the hosting and distribution layers are not**—a single point of failure or compromise can affect the entire software supply chain.  
 
 Our goal is to build a **fully decentralized GitHub**:  
-- where repositories are **hosted on decentralized storage** (EthStorage),  
-- refs and commit histories are **anchored on-chain**,  
-- and users can **clone, push, and verify code** with the same Git commands, but backed by Ethereum’s trust guarantees.  
+- where Git objects are stored as packfiles on decentralized storage (EthStorage), 
+- refs and branch updates are recorded and verified on-chain,  
+- and users can clone, push, and verify every update and its provenance with the same Git commands, now backed by Ethereum’s trust guarantees.  
 
 This aligns with Vitalik’s call for *“full-stack openness and verifiability”*, ensuring that every layer — from code to deployment — is transparent and independently reproducible.
 
@@ -44,12 +44,41 @@ https://github.com/user/repo.git
 ```
 we have:
 ```
-eths://dehub.eth/vitalik-blog
+ethfs://dehub.eth/vitalik-blog
 ```
-where:
-- `dehub.eth` is an ENS-resolved **DeHub contract**,  
-- `vitalik-blog` is a **repo** registered on-chain,  
+In this decentralized form:
+- `ethfs://` denotes a Git remote protocol that connects Git’s ref operations to Ethereum smart contracts and its object storage to EthStorage blobs.
+- `dehub.eth` is an ENS-resolved **DeHub contract** that manages repositories on-chain,  
+- `vitalik-blog` is a **repo contract** registered under DeHub,  
 - and the code itself lives on EthStorage, verifiable and permanent.
+
+Together, these define a fully decentralized Git endpoint, where all Git objects are stored on EthStorage and all refs are maintained on-chain.
+
+#### How Git Remote Helper Works
+
+When you run standard Git commands like:
+
+```bash
+git clone ethfs://dehub.eth/vitalik-blog
+git push ethfs://dehub.eth/vitalik-blog
+```
+
+Git automatically call a helper binary named:
+
+```bash
+git-remote-ethfs
+```
+
+The helper communicates with Git over a simple stdin/stdout protocol:
+ - list → list refs
+ - fetch → download pack(s)
+ - push → upload pack(s)
+
+It then translates these operations into backend actions:
+ - calling smart contracts to update refs, and
+ - reading/writing packfiles to EthStorage.
+
+Importantly, core Git remains unchanged — only a new remote scheme is introduced. This ensures complete compatibility with existing Git tools and workflows.
 
 ## 3. Architecture Overview
 
@@ -83,9 +112,11 @@ where:
 - Optional writer/maintainer list for permission control.
 
 ### 4.3. EthStorage Integration
-Each push corresponds to a packfile stored in EthStorage.
+Each push produces a Git packfile representing the delta between the local and remote state.
 
-The `packfileHash` is recorded in the `updateRefs()` call, ensuring full data-chain verifiability.
+The client uploads this packfile through a blob-carry transaction, after which EthStorage nodes permanently store the blob as part of the Ethereum data layer.
+
+Later, the Git remote helper retrieves the same packfile directly from EthStorage using its packfileHash, reconstructing the repository state locally.
 
 ## 5. Example Workflow
 
@@ -104,7 +135,7 @@ DeHub.createRepo("vitalik-blog", 0xUserAddress);
 4. Contract emits `RefUpdated`, anchoring the commit.
 
 ### Cloning
-1. `git clone eths://dehub.eth/vitalik-blog`  
+1. `git clone ethfs://dehub.eth/vitalik-blog`  
 2. Client resolves `dehub.eth` → DeHub contract → repo address.  
 3. Fetches current refs and packfileHashs.  
 4. Downloads pack files from EthStorage and reconstructs the repository locally.
@@ -115,7 +146,7 @@ DeHub.createRepo("vitalik-blog", 0xUserAddress);
 |-------|------------|
 | **Phase 1 – Contract Launch** | Deploy DeHub (registry + factory) and Repo base implementation. Support ENS name resolution (`dehub.eth`). |
 | **Phase 2 – EthStorage Integration** | Push/fetch Git objects through EthStorage packfile hashes. |
-| **Phase 3 – Git Helper Integration** | Release `git-remote-eths` plugin to enable `git push` / `git clone` directly. |
+| **Phase 3 – Git Helper Integration** | Release `git-remote-ethfs` plugin to enable `git push` / `git clone` directly. |
 | **Phase 4 – Governance and Permissions** | Multi-sig / DAO-controlled writer sets, repo ownership transfer, and organization namespaces. |
 
 ## 7. Outlook
