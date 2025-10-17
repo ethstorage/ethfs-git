@@ -5,9 +5,9 @@
 Modern open-source collaboration relies heavily on centralized services like GitHub and npm. While Git itself is decentralized, **the hosting and distribution layers are not**—a single point of failure or compromise can affect the entire software supply chain.  
 
 Our goal is to build a **fully decentralized GitHub**:  
-- where Git objects are stored as packfiles on decentralized storage (EthStorage), 
-- branch references and updates are stored on-chain to ensure a transparent, tamper-proof history,  
-- and users can clone and push using the same Git commands — now backed by Ethereum’s trust guarantees.  
+- **Git branch information** — such as which commit a branch (e.g., main) currently points to — is recorded and updated on-chain to ensure a transparent and tamper-proof history.
+- **Git objects** are stored as **packfiles** — compact binary bundles containing all commits, trees, and file contents — on EthStorage, Ethereum’s decentralized storage layer. Users upload data through blob-carrying transactions to an L1 contract, while the EthStorage L2 network permanently preserves these blobs and submits storage proofs to the L1 contract.    
+- **Users can clone and push** using the same Git commands — now backed by Ethereum’s trust guarantees.  
 
 This aligns with Vitalik’s call for *“full-stack openness and verifiability”*, ensuring that every layer — from code to deployment — is transparent and independently reproducible.
 
@@ -16,9 +16,9 @@ This aligns with Vitalik’s call for *“full-stack openness and verifiability�
 ### 2.1 Git’s Data Model
 
 **Git objects** are the atomic units of a repository:
- - **Commit** objects record a snapshot of the project and link to a specific tree and parent commits.
- - **Tree** objects represent **directory structures** — they map file names to subdirectories (trees) or files (blobs).
- - **Blob** objects contain the actual **file contents** (the data of each versioned file).
+ - A **commit** object records a snapshot of the project (represented by a tree); Except for the initial commit, each commit has one or more parent commits (in the case of merges).
+ - A **tree** object represents **directory structure** — it maps names to either subdirectories (trees) or files (blobs).
+ - A **blob** object contains the actual **file content** - the data of each versioned file.
 
 All of these objects are content-addressed and linked by cryptographic hashes, forming a tree structure — the foundation of Git’s verifiability.
 
@@ -28,8 +28,9 @@ A centralized Git service like GitHub essentially provides:
 
 ### 2.2 Packfiles
 
-For efficiency, Git bundles many of these objects into a **packfile** — a compact, binary container that stores multiple objects (often delta-compressed).
-Packfiles are how Git transmits data between repositories and also how it optimizes on-disk storage.
+For efficiency, Git bundles related objects — such as commits, trees, and blobs — into a **packfile**, a compact binary format that can delta-compress objects relative to one another.
+
+When pushing or fetching, Git determines the difference between the local and remote repositories, then packs all missing objects (from the common ancestor commit up to the latest commit) into a single packfile for transmission.
 
 ### 2.3 Decentralizing the Stack
 
