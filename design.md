@@ -6,8 +6,8 @@ Modern open-source collaboration relies heavily on centralized services like Git
 
 Our goal is to build a **fully decentralized GitHub**:  
 - where Git objects are stored as packfiles on decentralized storage (EthStorage), 
-- refs and branch updates are recorded and verified on-chain,  
-- and users can clone, push, and verify every update and its provenance with the same Git commands, now backed by Ethereum’s trust guarantees.  
+- branch references and updates are stored on-chain to ensure a transparent, tamper-proof history,  
+- and users can clone and push using the same Git commands — now backed by Ethereum’s trust guarantees.  
 
 This aligns with Vitalik’s call for *“full-stack openness and verifiability”*, ensuring that every layer — from code to deployment — is transparent and independently reproducible.
 
