@@ -15,45 +15,66 @@ This aligns with Vitalik’s call for *“full-stack openness and verifiability�
 
 ### 2.1 Git’s Local Data Model
 
-**Git objects** are the atomic units of a repository:
  - A **commit** object records a snapshot of the project (represented by a tree); Except for the initial commit, each commit has one or more parent commits (in the case of merges).
  - A **tree** object represents **directory structure** — it maps names to either subdirectories (trees) or files (blobs).
  - A **blob** object contains the actual **file content** - the data of each versioned file.
+ - A **ref** (reference) is a human-readable pointer that maps a branch name (e.g., refs/heads/main) to a specific commit’s object ID (OID). When you make a new commit, Git updates the ref to point from the old commit (oldOid) to the new one (newOid)
 
-All of these objects are content-addressed and linked by cryptographic hashes, forming a tree structure — the foundation of Git’s verifiability.
+All of the Git's objects are **content-addressed** — each is identified by a 20-byte SHA-1 (or SHA-256) **object ID** (OID). These OIDs form a cryptographic chain linking every commit to its parents, ensuring the entire project history is tamper-evident and verifiable — the foundation of Git’s integrity model.
 
-A centralized Git service like GitHub essentially provides:
- - A mapping of refs (e.g., refs/heads/main → commit hash), and
- - A storage backend for Git objects.
-
-### 2.2 Packfiles
-
-For efficiency, Git bundles related objects — such as commits, trees, and blobs — into a **packfile**, a compact binary format that can delta-compress objects relative to one another.
-
+For efficiency, Git bundles related objects (commits, trees, and blobs) into a **packfile**, a compact binary format that delta-compresses objects relative to one another.  
 When pushing or fetching, Git determines the difference between the local and remote repositories, then packs all missing objects (from the common ancestor commit up to the latest commit) into a single packfile for transmission.
 
-### 2.3 Decentralizing the Stack
+A centralized Git service like GitHub essentially provides:
+- A mapping of refs (e.g., `refs/heads/main → commit hash`), and  
+- A storage backend for Git objects and packfiles.
 
-To decentralize this:
-- **Refs** move on-chain (managed by smart contracts).  
-- **Objects (packfiles)** move to **EthStorage**, Ethereum’s native decentralized blob storage.  
-- **Git clients** interact with these through a thin remote helper that speaks the standard Git protocol but resolves to on-chain contracts instead of a centralized server.
+### 2.2 Git’s On-Chain Data Model
 
-So instead of:
-```
-https://github.com/user/repo.git
-```
-we have:
+In a decentralized architecture, we map Git’s core elements to blockchain primitives:
+
+| Git Concept | On-chain Equivalent | Storage Layer |
+|--------------|--------------------|----------------|
+| **Ref (e.g., refs/heads/main)** | Smart-contract state variable recording the current **commit OID (`newOid`)** | Ethereum L1 (smart contract) |
+| **Packfile (objects delta)** | Blob payload containing commits, trees, and blobs | EthStorage (Ethereum’s L2 storage network) |
+| **Push (update refs)** | On-chain transaction invoking `updateRefs(oldOid, newOid, packfileHash)` | Ethereum L1 contract call |
+| **Fetch / Clone** | Reading refs from contract + downloading packfiles by hash | EthStorage blob retrieval |
+
+Thus:
+- **Refs and updates** are verifiable on-chain.  
+- **Objects** are stored as immutable blobs on EthStorage.  
+- **Integrity** is guaranteed by cryptographic hashes linking the two layers.
+
+### 2.3 End-to-End Workflow (Clone & Push)
+
+A decentralized Git remote looks like this:
+
 ```
 ethfs://dehub.eth/vitalik-blog
 ```
-In this decentralized form:
-- `ethfs://` denotes a Git remote protocol that connects Git’s ref operations to Ethereum smart contracts and its object storage to EthStorage blobs.
-- `dehub.eth` is an ENS-resolved **DeHub contract** that manages repositories on-chain,  
-- `vitalik-blog` is a **repo contract** registered under DeHub,  
-- and the code itself lives on EthStorage, verifiable and permanent.
 
-Together, these define a fully decentralized Git endpoint, where all Git objects are stored on EthStorage and all refs are maintained on-chain.
+- `ethfs://` denotes the EthStorage-based Git protocol that connects Git to smart contracts and decentralized storage.  
+- `dehub.eth` is an ENS-resolved **DeHub registry contract** that manages repositories on-chain.  
+- `vitalik-blog` is a **Repo contract** deployed from DeHub.  
+- The code itself resides as packfiles in EthStorage.  
+
+#### Clone
+
+1. User runs `git clone ethfs://dehub.eth/vitalik-blog`.  
+2. Git calls the [git remote helper](#how-git-remote-helper-works) binary `git-remote-ethfs`.  
+3. The helper resolves `dehub.eth` → DeHub contract → Repo contract, fetches branch refs, and obtains corresponding `packfileHash`s.  
+4. It downloads packfiles from EthStorage using these hashes and reconstructs the full repository locally.
+
+#### Push
+
+1. Git computes the delta between local and remote and generates a packfile.  
+2. The **git remote helper** submits this packfile via a blob-carrying transaction.  
+3. EthStorage nodes permanently store the blob and submit proofs to the L1 contract.  
+4. The helper then calls `updateRefs()` on the Repo contract with the new commit hash and `packfileHash`.  
+
+#### Why This Matters
+
+This model preserves Git’s local logic (objects and refs) but replaces the trusted central server with verifiable on-chain coordination and decentralized storage — **same Git, new trust model**.
 
 #### How Git Remote Helper Works
 
@@ -78,8 +99,6 @@ The helper communicates with Git over a simple stdin/stdout protocol:
 It then translates these operations into backend actions:
  - calling smart contracts to update refs and upload packfiles in blobs, and
  - reading/writing packfiles to EthStorage.
-
-Importantly, core Git remains unchanged — only a new remote scheme is introduced. This ensures complete compatibility with existing Git tools and workflows.
 
 ## 3. Architecture Overview
 
