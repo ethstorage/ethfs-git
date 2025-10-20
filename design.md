@@ -22,8 +22,7 @@ This aligns with Vitalik’s call for *“full-stack openness and verifiability�
 
 All of the Git's objects are **content-addressed** — each is identified by a 20-byte SHA-1 (or SHA-256) **object ID** (OID). These OIDs form a cryptographic chain linking every commit to its parents, ensuring the entire project history is tamper-evident and verifiable — the foundation of Git’s integrity model.
 
-For efficiency, Git bundles related objects (commits, trees, and blobs) into a **packfile**, a compact binary format that delta-compresses objects relative to one another.  
-When pushing or fetching, Git determines the difference between the local and remote repositories, then packs all missing objects (from the common ancestor commit up to the latest commit) into a single packfile for transmission.
+For efficiency, Git bundles related objects (commits, trees, and blobs) into a **packfile**, a compact binary format that delta-compresses objects relative to one another. When pushing or fetching, Git determines the difference between the local and remote repositories, then packs all missing objects (from the common ancestor commit up to the latest commit) into a single packfile for transmission.
 
 A centralized Git service like GitHub essentially provides:
 - A mapping of refs (e.g., `refs/heads/main → commit hash`), and  
