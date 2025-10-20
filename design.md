@@ -6,7 +6,7 @@ Modern open-source collaboration relies heavily on centralized services like Git
 
 Our goal is to build a **fully decentralized GitHub**:  
 - **Git branch information** — such as which commit a branch (e.g., main) currently points to — is recorded and updated on-chain to ensure a transparent and tamper-proof history.
-- **Git objects** are stored as **packfiles** — compact binary bundles containing all commits, trees, and file contents — on EthStorage, Ethereum’s decentralized storage layer. Users upload data through blob-carrying transactions to an L1 contract, while the EthStorage L2 network permanently preserves these blobs and submits storage proofs to the L1 contract.    
+- **Git objects** are stored as **packfiles** — compact binary bundles containing all commits, trees, and file contents — on EthStorage, Ethereum’s decentralized storage layer for blobs. Users upload data through blob-carrying transactions to the EthStorage L1 contract with a storage fee.  Then, the EthStorage off-chain storage network (a.k.a., a storage L2) will permanently preserve these blobs and submit storage proofs to the EthStorage L1 contract.    
 - **Users can clone and push** using the same Git commands — now backed by Ethereum’s trust guarantees.  
 
 This aligns with Vitalik’s call for *“full-stack openness and verifiability”*, ensuring that every layer — from code to deployment — is transparent and independently reproducible.
