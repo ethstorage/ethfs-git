@@ -76,7 +76,7 @@ The helper communicates with Git over a simple stdin/stdout protocol:
  - push → upload pack(s)
 
 It then translates these operations into backend actions:
- - calling smart contracts to update refs, and
+ - calling smart contracts to update refs and upload packfiles in blobs, and
  - reading/writing packfiles to EthStorage.
 
 Importantly, core Git remains unchanged — only a new remote scheme is introduced. This ensures complete compatibility with existing Git tools and workflows.
