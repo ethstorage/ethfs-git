@@ -13,7 +13,7 @@ This aligns with Vitalik’s call for *“full-stack openness and verifiability�
 
 ## 2. Core Principle — How Decentralized Git Works
 
-### 2.1 Git’s Data Model
+### 2.1 Git’s Local Data Model
 
 **Git objects** are the atomic units of a repository:
  - A **commit** object records a snapshot of the project (represented by a tree); Except for the initial commit, each commit has one or more parent commits (in the case of merges).
