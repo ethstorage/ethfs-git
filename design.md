@@ -22,7 +22,7 @@ This aligns with Vitalik’s call for *“full-stack openness and verifiability�
 
 All of the Git's objects are **content-addressed** — each is identified by a 20-byte SHA-1 (or SHA-256) **object ID** (OID). These OIDs form a cryptographic chain linking every commit to its parents, ensuring the entire project history is tamper-evident and verifiable — the foundation of Git’s integrity model.
 
-For efficiency, Git bundles related objects (commits, trees, and blobs) into a **packfile**, a compact binary format that delta-compresses objects relative to one another. When pushing or fetching, Git determines the difference between the local and remote repositories, then packs all missing objects (from the common ancestor commit up to the latest commit) into a single packfile for transmission.
+For efficiency, Git bundles related objects (commits, trees, and blobs) into a **packfile**, a compact binary format that delta-compresses objects relative to one another. When pushing or fetching, Git determines the difference between the local and remote repositories, then packs all missing objects (from the common ancestor commit up to the latest commit) into a single packfile for transmission. For a deeper look at Git’s smart transfer protocol, see the Git [documentation](https://git-scm.com/book/en/v2/Git-Internals-Transfer-Protocols).
 
 A centralized Git service like GitHub essentially provides:
 - A mapping of refs (e.g., `refs/heads/main → commit hash`), and  
@@ -30,14 +30,18 @@ A centralized Git service like GitHub essentially provides:
 
 ### 2.2 Git’s On-Chain Data Model
 
-In a decentralized architecture, we map Git’s core elements to blockchain primitives:
+Git’s on-chain data model separates **logical state** (branch references and commit mappings) from **data persistence** (packfiles). The **Ethereum L1 contract** records which commit a branch currently points to and stores the hash of the corresponding packfile. Meanwhile, **EthStorage L2** permanently stores the packfile data itself — uploaded via blob-carrying transactions and retrievable by content hash.
 
-| Git Concept | On-chain Equivalent | Storage Layer |
-|--------------|--------------------|----------------|
-| **Ref (e.g., refs/heads/main)** | Smart-contract state variable recording the current **commit OID (`newOid`)** | Ethereum L1 (smart contract) |
-| **Packfile (objects delta)** | Blob payload containing commits, trees, and blobs | EthStorage (Ethereum’s L2 storage network) |
-| **Push (update refs)** | On-chain transaction invoking `updateRefs(oldOid, newOid, packfileHash)` | Ethereum L1 contract call |
-| **Fetch / Clone** | Reading refs from contract + downloading packfiles by hash | EthStorage blob retrieval |
+Push and fetch operations thus span both layers:
+ - **Push** updates refs on-chain and uploads new packfiles to EthStorage.
+ - **Fetch** (or clone) reads refs and packfile hashes from the contract, then retrieves the corresponding packfiles from EthStorage to reconstruct the repository locally.
+
+| Git Concept | On-chain Equivalent | Ethereum L1 (Contract Layer) | EthStorage L2 (Blob Storage) |
+|--------------|--------------------|----------------|----------------|
+| **Ref (e.g., refs/heads/main)** | Smart contract variable recording the current **commit OID (`newOid`)** | ✅ Stores branch → commit mapping | ❌ |
+| **Packfile (objects delta)** | Compact binary bundle containing commits, trees, and blobs | ❌ | ✅ Permanently stores packfiles as content-addressed blobs |
+| **Push (update refs)** | Uploads new packfile and updates on-chain refs | ✅ Calls updateRefs(oldOid, newOid, packfileHash) | ✅ Uploads packfile via blob-carry transaction |
+| **Fetch / Clone** | Reads refs and downloads packfiles to reconstruct the repo | ✅ Reads refs & packfileHash from contract | ✅ Downloads packfiles by hash |
 
 Thus:
 - **Refs and updates** are verifiable on-chain.  
